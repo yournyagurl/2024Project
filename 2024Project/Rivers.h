@@ -11,6 +11,7 @@ class Rivers
 	std::vector<std::string> southAmericaRivers;
 	std::vector<std::string> africanRivers;
 	std::vector<std::string> recentRivers;
+	int selectedMode = 1;
 
 public:
 	//Time complexity: O(n)
@@ -23,7 +24,9 @@ public:
 	std::string getContinent(std::string river);
 
 	//No need to implement this until assignment 2
-	void setMode(int mode) {}
+	void setMode(int mode) {
+		selectedMode = mode;
+	}
 
 
 };

@@ -13,11 +13,11 @@ class Game {
 	//further variables...
 	int score;
 	int totalScore;
-	std::vector<std::tuple<std::string, std::string, int>> correctAnswers; 
+	std::vector<std::tuple<std::string, std::string, int>> correctAnswers;
 
 
 public:
-	Game(Rivers& rivers) : r(rivers) { }
+	Game(Rivers& rivers) : r(rivers) {}
 	int getScore() { return score; }
 	int getTotal() { return totalScore; }
 	//reset score and total to 0
@@ -34,7 +34,7 @@ public:
 	//this method should implement one round of the game only, 
 	//it should return true if the player wishes to continue ('s' or 'd') and false otherwise ('q')
 	bool playRound(std::ostream& out, std::istream& in);
-	
+
 	//No need to implement this until assignment 2 
 	std::vector<std::string> getFastest() {
 		if (correctAnswers.empty()) {
@@ -43,16 +43,16 @@ public:
 
 		std::vector<std::tuple<std::string, std::string, int>> sortedAnswers = correctAnswers;
 
-		// Sort by time in ascending order (fastest first)
+		// Sort by time in ascending order (slowest last)
 		std::sort(sortedAnswers.begin(), sortedAnswers.end(),
 			[](const auto& a, const auto& b) {
-				return std::get<2>(a) < std::get<2>(b);
+				return std::get<2>(a) < std::get<2>(b);  // Sort by increasing time
 			});
 
 		std::vector<std::string> result;
 		for (size_t i = 0; i < std::min(sortedAnswers.size(), size_t(5)); ++i) {
-			result.push_back(std::get<0>(sortedAnswers[i]) + "\t" +
-				std::get<1>(sortedAnswers[i]) + "\t" +
+			result.push_back(std::get<0>(sortedAnswers[i]) + "," +
+				std::get<1>(sortedAnswers[i]) + "," +
 				std::to_string(std::get<2>(sortedAnswers[i])));
 		}
 		return result;

@@ -552,6 +552,7 @@ bool AdvancedTests::checkSorted() {
 			rivs.push_back(rivers[1]);
 		}
 	}
+
 	std::vector<std::string> sorts = g.getFastest();
 	if (sorts.size() > 5)
 		return false;
