@@ -3,14 +3,13 @@
 #include <ostream>
 #include <istream>
 #define ASSIGNMENT_2				//uncomment to switch to assignment 2
-#define RUN_PAUSE_TEST  		
+#define RUN_PAUSE_TEST  		//uncomment to run pause test (for assignment 2 only)
 #include <algorithm>
-//uncomment to run pause test (for assignment 2 only)
+
 
 
 class Game {
 	Rivers r;
-	//further variables...
 	int score;
 	int totalScore;
 	std::vector<std::tuple<std::string, std::string, int>> correctAnswers;
@@ -57,4 +56,4 @@ public:
 		}
 		return result;
 	}
-};
+}; 

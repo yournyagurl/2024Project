@@ -1,139 +1,166 @@
-#include "Rivers.h"
+#include <vector>
+#include <string>
+#include <unordered_set>
+#include <unordered_map>
 #include <fstream>
 #include <random>
+#include <algorithm>
 #include <iostream>
-#include <unordered_set>
+#include "Rivers.h"
 
-Rivers::Rivers(const std::vector<std::string>& filenames) 
+Rivers::Rivers(const std::vector<std::string>& filenames) {
+    // Populate continent vectors and the map of rivers to continents
+    for (const auto& fileName : filenames) {
+        std::ifstream file(fileName);
+        if (!file.is_open()) {
+            std::cerr << "Error: Failed to open file " << fileName << std::endl;
+            continue; // Skip this file if it can't be opened
+        }
 
-// reading the files for the different rivers in each continent
-{
-	for (int i = 0; i < filenames.size(); ++i) {
-		std::string fileName = filenames[i];
-		std::string line;
+        std::string line;
+        while (std::getline(file, line)) {
+            if (line.empty()) continue; // Skip empty lines
 
-		std::ifstream file(fileName);
-		while (std::getline(file, line)) {
-			if (fileName == "Europe.txt") {
-				europeRivers.push_back(line);
-			}
-			else if (fileName == "Asia.txt") {
-				asianRivers.push_back(line);
-			}
-			else if (fileName == "Africa.txt") {
-				africanRivers.push_back(line);
-			}
-			else if (fileName == "South America.txt") {
-				southAmericaRivers.push_back(line);
-			}
-		}
-
-		file.close();
-	}
+            if (fileName.find("Europe") != std::string::npos) {
+                europeRivers.push_back(line);
+                riverToContinent[line] = "Europe";
+            }
+            else if (fileName.find("Asia") != std::string::npos) {
+                asianRivers.push_back(line);
+                riverToContinent[line] = "Asia";
+            }
+            else if (fileName.find("Africa") != std::string::npos) {
+                africanRivers.push_back(line);
+                riverToContinent[line] = "Africa";
+            }
+            else if (fileName.find("South America") != std::string::npos) {
+                southAmericaRivers.push_back(line);
+                riverToContinent[line] = "South America";
+            }
+        }
+    }
 }
 
-
+void Rivers::setMode(int mode) {
+    selectedMode = mode;
+}
 std::string Rivers::getRandomRiver() {
-	static std::mt19937 randomRiverGenerator(std::random_device{}());
+    // Combine all rivers into a single list
+    std::vector<std::string> allRivers;
+    allRivers.insert(allRivers.end(), europeRivers.begin(), europeRivers.end());
+    allRivers.insert(allRivers.end(), asianRivers.begin(), asianRivers.end());
+    allRivers.insert(allRivers.end(), africanRivers.begin(), africanRivers.end());
+    allRivers.insert(allRivers.end(), southAmericaRivers.begin(), southAmericaRivers.end());
 
-	if (selectedMode == 1) {
-		// Step 1: Choose a continent with equal probability
-		std::vector<std::vector<std::string>> continents = { europeRivers, asianRivers, africanRivers, southAmericaRivers };
-		std::vector<std::string> continentNames = { "Europe", "Asia", "Africa", "South America" };
+    if (allRivers.empty()) return "Error: No rivers available";
 
-		std::uniform_int_distribution<int> continentDist(0, continents.size() - 1);
-		int chosenContinentIndex = continentDist(randomRiverGenerator);
+    std::string chosenRiver;
+    std::vector<std::string>* selectedContinent = nullptr;
 
-		// Step 2: Pick a river from the chosen continent
-		std::vector<std::string>& chosenContinent = continents[chosenContinentIndex];
+    // Mode 1: Equal probability of each continent
+    if (selectedMode == 1) {
+        int continentIndex = std::uniform_int_distribution<int>(0, 3)(randomRiverGenerator);
+        switch (continentIndex) {
+        case 0: selectedContinent = &europeRivers; break;
+        case 1: selectedContinent = &asianRivers; break;
+        case 2: selectedContinent = &africanRivers; break;
+        case 3: selectedContinent = &southAmericaRivers; break;
+        }
+    }
+    // Mode 3: 50% chance of being from the same continent as the previous river
+    else if (selectedMode == 3) {
+        std::string lastContinent = "";
+        if (!recentRivers.empty()) {
+            lastContinent = getContinent(recentRivers.back());
+        }
 
-		if (chosenContinent.empty()) return "Error: No rivers available in " + continentNames[chosenContinentIndex];
+        bool chooseSameContinent = std::uniform_int_distribution<int>(0, 1)(randomRiverGenerator);
+        if (chooseSameContinent && !lastContinent.empty()) {
+            if (lastContinent == "Europe") selectedContinent = &europeRivers;
+            else if (lastContinent == "Asia") selectedContinent = &asianRivers;
+            else if (lastContinent == "Africa") selectedContinent = &africanRivers;
+            else if (lastContinent == "South America") selectedContinent = &southAmericaRivers;
+        }
 
-		std::uniform_int_distribution<int> riverDist(0, chosenContinent.size() - 1);
-		return chosenContinent[riverDist(randomRiverGenerator)];
-	}
+        if (!selectedContinent) {
+            int continentIndex = std::uniform_int_distribution<int>(0, 3)(randomRiverGenerator);
+            switch (continentIndex) {
+            case 0: selectedContinent = &europeRivers; break;
+            case 1: selectedContinent = &asianRivers; break;
+            case 2: selectedContinent = &africanRivers; break;
+            case 3: selectedContinent = &southAmericaRivers; break;
+            }
+        }
+    }
 
-	else if (selectedMode == 2) {
-		// Completely random river selection (preserving overall distribution)
-		std::vector<std::string> allRivers;
-		allRivers.insert(allRivers.end(), europeRivers.begin(), europeRivers.end());
-		allRivers.insert(allRivers.end(), asianRivers.begin(), asianRivers.end());
-		allRivers.insert(allRivers.end(), africanRivers.begin(), africanRivers.end());
-		allRivers.insert(allRivers.end(), southAmericaRivers.begin(), southAmericaRivers.end());
+    if (!selectedContinent) {
+        return "Error: No continent selected.";
+    }
 
-		if (allRivers.empty()) return "Error: No rivers available";
+    if (selectedContinent->empty()) {
+        return "Error: Selected continent has no rivers.";
+    }
 
-		std::uniform_int_distribution<int> dist(0, allRivers.size() - 1);
-		return allRivers[dist(randomRiverGenerator)];
-	}
+    int attempts = 100;  // Prevent infinite loops
+    bool foundValidRiver = false;
 
-	else if (selectedMode == 3) {
-		// 50% chance for consecutive rivers to be from the same continent
-		static std::string lastRiver = "";
-		std::string lastContinent = lastRiver.empty() ? "" : getContinent(lastRiver);
+    // Loop until a valid, non-repeated river is found
+    while (!foundValidRiver && attempts > 0) {
+        if (selectedContinent->empty()) {
+            return "Error: No rivers available in selected continent.";
+        }
+        int index = std::uniform_int_distribution<int>(0, selectedContinent->size() - 1)(randomRiverGenerator);
+        chosenRiver = (*selectedContinent)[index];
 
-		bool keepSameContinent = std::uniform_int_distribution<int>(0, 1)(randomRiverGenerator) == 0; // 50% chance
+        // Ensure the chosen river hasn't been selected recently
+        if (recentRiversSet.find(chosenRiver) == recentRiversSet.end()) {
+            foundValidRiver = true;
+        }
 
-		std::vector<std::string> sameContinentRivers;
-		if (lastContinent == "Europe") sameContinentRivers = europeRivers;
-		else if (lastContinent == "Asia") sameContinentRivers = asianRivers;
-		else if (lastContinent == "Africa") sameContinentRivers = africanRivers;
-		else if (lastContinent == "South America") sameContinentRivers = southAmericaRivers;
+        --attempts;  // Prevent infinite loop
+    }
 
-		if (keepSameContinent && !sameContinentRivers.empty()) {
-			std::uniform_int_distribution<int> dist(0, sameContinentRivers.size() - 1);
-			lastRiver = sameContinentRivers[dist(randomRiverGenerator)];
-			return lastRiver;
-		}
+    if (!foundValidRiver) {
+        return "Error: No unique rivers available";
+    }
 
-		// If we cannot keep the same continent or there are no rivers, pick randomly
-		std::vector<std::string> allRivers;
-		allRivers.insert(allRivers.end(), europeRivers.begin(), europeRivers.end());
-		allRivers.insert(allRivers.end(), asianRivers.begin(), asianRivers.end());
-		allRivers.insert(allRivers.end(), africanRivers.begin(), africanRivers.end());
-		allRivers.insert(allRivers.end(), southAmericaRivers.begin(), southAmericaRivers.end());
+    // Add the chosen river to recentRivers and recentRiversSet
+    recentRivers.push_back(chosenRiver);
+    recentRiversSet.insert(chosenRiver);
 
-		if (allRivers.empty()) return "Error: No rivers available";
+    // Maintain a rolling window of 6 unique rivers
+    if (recentRivers.size() > 6) {
+        std::string oldestRiver = recentRivers.front();
+        recentRiversSet.erase(oldestRiver);  // Remove from the set
+        recentRivers.erase(recentRivers.begin());  // Remove from the vector
+    }
 
-		std::uniform_int_distribution<int> dist(0, allRivers.size() - 1);
-		lastRiver = allRivers[dist(randomRiverGenerator)];
-		return lastRiver;
-	}
-
-	return "Error: Invalid mode";
+    return chosenRiver;
 }
 
 
 
+bool Rivers::sameContinent(std::string r1, std::string r2) {
+    // Cache results to avoid redundant calls to getContinent
+    std::string continent1 = getContinent(r1);
+    std::string continent2 = getContinent(r2);
 
-bool Rivers::sameContinent(std::string r1, std::string r2)
-{
-	std::string r1Result = getContinent(r1);
-	std::string r2Result = getContinent(r2);
+    if (continent1.empty() || continent2.empty()) {
+        return false;
+    }
 
-	if (r1Result == "" || r2Result == "") {
-		return false;
-	}
-
-	return r1Result == r2Result;
+    return continent1 == continent2;
 }
 
-std::string Rivers::getContinent(std::string river)
-{
-
-	if (std::find(europeRivers.begin(), europeRivers.end(), river) != europeRivers.end()) {
-		return "Europe";
-	}
-	else if (std::find(asianRivers.begin(), asianRivers.end(), river) != asianRivers.end()) {
-		return "Asia";
-	}
-	else if (std::find(africanRivers.begin(), africanRivers.end(), river) != africanRivers.end()) {
-		return "Africa";
-	}
-	else if (std::find(southAmericaRivers.begin(), southAmericaRivers.end(), river) != southAmericaRivers.end()) {
-		return "South America";
-	}
-	else {
-		return "";
-	}
+//O(k)
+std::string Rivers::getContinent(std::string river) {
+    auto it = riverToContinent.find(river);
+    if (it != riverToContinent.end()) {
+        return it->second;
+    }
+    else {
+        return ""; // If river is not found in any continent, return empty
+    }
 }
+
+std::mt19937 Rivers::randomRiverGenerator(std::random_device{}());
