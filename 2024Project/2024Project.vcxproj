@@ -235,6 +235,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Test|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="game_test.cpp" />
     <ClCompile Include="Rivers.cpp" />
     <ClCompile Include="Source %28DO NOT EDIT%29.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Feedback|x64'">true</ExcludedFromBuild>
